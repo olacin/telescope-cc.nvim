@@ -7,7 +7,7 @@ cc_actions.commit = function(t, scope, msg)
     local cmd = ""
     local commit_message = t
 
-    if scope then
+    if scope ~= nil and scope ~= "" then
         commit_message = commit_message .. string.format("(%s)", scope)
     end
     commit_message = string.format("%s: %s", commit_message, msg)
