@@ -2,6 +2,8 @@
 
 A Telescope integration of [Conventional Commits](https://www.conventionalcommits.org/).
 
+![demo](./demo.gif)
+
 ## Installation
 
 ```
