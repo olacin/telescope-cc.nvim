@@ -54,34 +54,96 @@ telescope.load_extension("conventional_commits")
 ```lua
 local cc_actions = {}
 
-cc_actions.commit = function(t, scope, msg)
-    local cmd = ""
-    local commit_message = t
+cc_actions.commit = function(t, inputs)
+    local body = inputs.body or ""
+    local footer = inputs.footer or ""
 
-    if scope then
-        commit_message = commit_message .. string.format("(%s)", scope)
-    end
-    commit_message = string.format("%s: %s", commit_message, msg)
+    local cmd = ""
+
+    local commit_message = format_commit_message(t, inputs)
 
     if vim.g.loaded_fugitive then
         cmd = string.format(':G commit -m "%s"', commit_message)
     else
+        print(commit_message)
         cmd = string.format(':!git commit -m "%s"', commit_message)
     end
+
+    if body ~= nil and body ~= "" then
+        cmd = cmd .. string.format(' -m "%s"', body)
+    end
+
+    if footer ~= nil and footer ~= "" then
+        cmd = cmd .. string.format(' -m "%s"', footer)
+    end
+
+    print(cmd)
 
     vim.cmd(cmd)
 end
 
--- Default action (here with tpope vim-fugitive)
-cc_actions.prompt = function(entry)
-    vim.ui.input({ prompt = "Is there a scope ? (optional)" }, function(msg)
-        local scope = msg
-        vim.ui.input({ prompt = "Enter commit message: " }, function(msg)
-            if not msg then
-                return
-            end
-            cc_actions.commit(entry.value, scope, msg)
-        end)
-    end)
+cc_actions.prompt = function(entry, include_extra_steps)
+    local inputs = {}
+
+    input("Is there a scope ? (optional) ", "scope", inputs)
+
+    input("Enter commit message: ", "msg", inputs)
+
+    if not inputs.msg then
+        return
+    end
+
+    if not include_extra_steps then
+        cc_actions.commit(entry.value, inputs)
+        return
+    end
+
+    input("Enter the commit body: ", "body", inputs)
+
+    input("Enter the commit footer: ", "footer", inputs)
+
+    cc_actions.commit(entry.value, inputs)
 end
+```
+
+### Include body and footer
+
+You can create a command to initiate the extension with the `include_body_and_footer` flag.
+
+```lua
+local function create_conventional_commit()
+    local actions =
+        require("telescope._extensions.conventional_commits.actions")
+    local picker =
+        require("telescope._extensions.conventional_commits.picker")
+
+    picker({
+        action = actions.prompt,
+        include_body_and_footer = true,
+    })
+end
+
+vim.keymap.set(
+  "n",
+  "cc",
+  create_conventional_commit,
+  { desc = "Create conventional commit" }
+)
+```
+
+Or you can setup the extension with `include_body_and_footer` flag included globally.
+
+```lua
+local actions =
+    require("telescope._extensions.conventional_commits.actions")
+
+telescope.setup({
+    ...
+    extensions = {
+        conventional_commits = {
+            action = actions.prompt,
+            include_body_and_footer = true,
+        },
+    },
+})
 ```

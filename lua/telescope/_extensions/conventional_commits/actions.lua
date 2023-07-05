@@ -1,16 +1,15 @@
-local actions_state = require("telescope.actions.state")
-local actions = require("telescope.actions")
+local format_commit_message = require("telescope._extensions.conventional_commits.utils.format_commit_message")
+local input = require("telescope._extensions.conventional_commits.utils.input")
 
 local cc_actions = {}
 
-cc_actions.commit = function(t, scope, msg)
-    local cmd = ""
-    local commit_message = t
+cc_actions.commit = function(t, inputs)
+    local body = inputs.body or ""
+    local footer = inputs.footer or ""
 
-    if scope ~= nil and scope ~= "" then
-        commit_message = commit_message .. string.format("(%s)", scope)
-    end
-    commit_message = string.format("%s: %s", commit_message, msg)
+    local cmd = ""
+
+    local commit_message = format_commit_message(t, inputs)
 
     if vim.g.loaded_fugitive then
         cmd = string.format(':G commit -m "%s"', commit_message)
@@ -18,19 +17,38 @@ cc_actions.commit = function(t, scope, msg)
         cmd = string.format(':!git commit -m "%s"', commit_message)
     end
 
+    if body ~= nil and body ~= "" then
+        cmd = cmd .. string.format(' -m "%s"', body)
+    end
+
+    if footer ~= nil and footer ~= "" then
+        cmd = cmd .. string.format(' -m "%s"', footer)
+    end
+
     vim.cmd(cmd)
 end
 
-cc_actions.prompt = function(entry)
-    vim.ui.input({ prompt = "Is there a scope ? (optional)" }, function(msg)
-        local scope = msg
-        vim.ui.input({ prompt = "Enter commit message: " }, function(msg)
-            if not msg then
-                return
-            end
-            cc_actions.commit(entry.value, scope, msg)
-        end)
-    end)
+cc_actions.prompt = function(entry, include_extra_steps)
+    local inputs = {}
+
+    input("Is there a scope ? (optional) ", "scope", inputs)
+
+    input("Enter commit message: ", "msg", inputs)
+
+    if not inputs.msg then
+        return
+    end
+
+    if not include_extra_steps then
+        cc_actions.commit(entry.value, inputs)
+        return
+    end
+
+    input("Enter the commit body: ", "body", inputs)
+
+    input("Enter the commit footer: ", "footer", inputs)
+
+    cc_actions.commit(entry.value, inputs)
 end
 
 return cc_actions
