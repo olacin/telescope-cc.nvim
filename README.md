@@ -45,8 +45,8 @@ telescope.setup({
                 --     value = feat"
                 -- }
                 vim.print(entry)
-            include_body_and_footer = true, -- Add prompts for commit body and footer
             end,
+            include_body_and_footer = true, -- Add prompts for commit body and footer
         },
     },
 })
