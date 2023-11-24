@@ -33,6 +33,7 @@ telescope.setup({
     ...
     extensions = {
         conventional_commits = {
+            theme = "ivy", -- custom theme
             action = function(entry)
                 -- entry = {
                 --     display = "feat       A new feature",
