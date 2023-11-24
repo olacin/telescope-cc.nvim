@@ -5,23 +5,42 @@ end
 
 local cc_actions = require("telescope._extensions.conventional_commits.actions")
 local cc_picker = require("telescope._extensions.conventional_commits.picker")
-local cc_types = require("telescope._extensions.conventional_commits.types")
+local themes = require("telescope.themes")
 
 local action = cc_actions.prompt
+local include_body_and_footer = false
+local theme = {}
 
 local search = function(opts)
     opts = opts or {}
 
-    defaults = {
+    local defaults = {
         action = action,
+        include_body_and_footer = include_body_and_footer,
     }
 
-    cc_picker(vim.tbl_extend("force", defaults, opts))
+    opts = vim.tbl_extend("force", defaults, opts)
+    opts = vim.tbl_extend("force", defaults, theme)
+
+    cc_picker(opts)
 end
 
 return telescope.register_extension({
     setup = function(cfg)
         action = cfg.action or cc_actions.prompt
+        include_body_and_footer = cfg.include_body_and_footer or false
+
+        if cfg.theme and cfg.theme ~= "" then
+            if not themes["get_" .. cfg.theme] then
+                vim.notify(
+                    string.format("Could not apply provided telescope theme: '%s'", cfg.theme),
+                    vim.log.levels.WARN,
+                    { title = "telescope-cc.nvim" }
+                )
+            else
+                theme = themes["get_" .. cfg.theme]()
+            end
+        end
     end,
     exports = {
         conventional_commits = search,
