@@ -1,5 +1,4 @@
 local format_commit_message = require("telescope._extensions.conventional_commits.utils.format_commit_message")
-local input = require("telescope._extensions.conventional_commits.utils.input")
 
 local cc_actions = {}
 
@@ -31,24 +30,34 @@ end
 cc_actions.prompt = function(entry, include_extra_steps)
     local inputs = {}
 
-    input("Is there a scope ? (optional) ", "scope", inputs)
+    -- HACK: dressing.nvim is asynchronous which makes this "callback hell" mandatory
+    -- It does not affect standard vim.ui.input.
+    vim.ui.input({ prompt = "Is there a scope ? (optional) " }, function(scope)
+        inputs["scope"] = scope
 
-    input("Enter commit message: ", "msg", inputs)
+        vim.ui.input({ prompt = "Enter commit message: " }, function(msg)
+            inputs["msg"] = msg
 
-    if not inputs.msg then
-        return
-    end
+            if not inputs.msg then
+                return
+            end
 
-    if not include_extra_steps then
-        cc_actions.commit(entry.value, inputs)
-        return
-    end
+            if not include_extra_steps then
+                cc_actions.commit(entry.value, inputs)
+                return
+            end
 
-    input("Enter the commit body: ", "body", inputs)
+            vim.ui.input({ prompt = "Enter the commit body: " }, function(body)
+                inputs["body"] = body
 
-    input("Enter the commit footer: ", "footer", inputs)
+                vim.ui.input({ prompt = "Enter the commit footer: " }, function(footer)
+                    inputs["footer"] = footer
 
-    cc_actions.commit(entry.value, inputs)
+                    cc_actions.commit(entry.value, inputs)
+                end)
+            end)
+        end)
+    end)
 end
 
 return cc_actions

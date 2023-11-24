@@ -12,6 +12,9 @@ Plug 'olacin/telescope-cc.nvim'
 
 # packer
 use 'olacin/telescope-cc.nvim'
+
+# lazy.nvim
+{ "olacin/telescope-cc.nvim" }
 ```
 
 ## Usage
@@ -41,8 +44,9 @@ telescope.setup({
                 --     ordinal = "feat",
                 --     value = feat"
                 -- }
-                print(vim.inspect(entry))
+                vim.print(entry)
             end,
+            include_body_and_footer = true, -- Add prompts for commit body and footer
         },
     },
 })
@@ -52,75 +56,25 @@ telescope.load_extension("conventional_commits")
 
 ### Default action
 
-```lua
-local cc_actions = {}
-
-cc_actions.commit = function(t, inputs)
-    local body = inputs.body or ""
-    local footer = inputs.footer or ""
-
-    local cmd = ""
-
-    local commit_message = format_commit_message(t, inputs)
-
-    if vim.g.loaded_fugitive then
-        cmd = string.format(':G commit -m "%s"', commit_message)
-    else
-        print(commit_message)
-        cmd = string.format(':!git commit -m "%s"', commit_message)
-    end
-
-    if body ~= nil and body ~= "" then
-        cmd = cmd .. string.format(' -m "%s"', body)
-    end
-
-    if footer ~= nil and footer ~= "" then
-        cmd = cmd .. string.format(' -m "%s"', footer)
-    end
-
-    print(cmd)
-
-    vim.cmd(cmd)
-end
-
-cc_actions.prompt = function(entry, include_extra_steps)
-    local inputs = {}
-
-    input("Is there a scope ? (optional) ", "scope", inputs)
-
-    input("Enter commit message: ", "msg", inputs)
-
-    if not inputs.msg then
-        return
-    end
-
-    if not include_extra_steps then
-        cc_actions.commit(entry.value, inputs)
-        return
-    end
-
-    input("Enter the commit body: ", "body", inputs)
-
-    input("Enter the commit footer: ", "footer", inputs)
-
-    cc_actions.commit(entry.value, inputs)
-end
-```
+Default action is `cc_actions.commit` and can be found [here](https://github.com/olacin/telescope-cc.nvim/blob/main/lua/telescope/_extensions/conventional_commits/actions.lua).
 
 ### Include body and footer
 
-You can create a command to initiate the extension with the `include_body_and_footer` flag.
+The easiest way is to add `include_body_and_footer` within telescope setup like shown above.
+
+If however you wish to do something more advanced, you can create a command to initiate the extension with the `include_body_and_footer` flag.
 
 ```lua
 local function create_conventional_commit()
-    local actions =
-        require("telescope._extensions.conventional_commits.actions")
-    local picker =
-        require("telescope._extensions.conventional_commits.picker")
+    local actions = require("telescope._extensions.conventional_commits.actions")
+    local picker = require("telescope._extensions.conventional_commits.picker")
+    local themes = require("telescope.themes")
 
+    -- if you use the picker directly you have to provide your theme manually
     picker({
         action = actions.prompt,
         include_body_and_footer = true,
+        -- theme = themes["get_ivy"]() -- ivy theme
     })
 end
 
@@ -130,21 +84,4 @@ vim.keymap.set(
   create_conventional_commit,
   { desc = "Create conventional commit" }
 )
-```
-
-Or you can setup the extension with `include_body_and_footer` flag included globally.
-
-```lua
-local actions =
-    require("telescope._extensions.conventional_commits.actions")
-
-telescope.setup({
-    ...
-    extensions = {
-        conventional_commits = {
-            action = actions.prompt,
-            include_body_and_footer = true,
-        },
-    },
-})
 ```
