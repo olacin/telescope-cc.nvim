@@ -45,4 +45,23 @@ return telescope.register_extension({
     exports = {
         conventional_commits = search,
     },
+    health = function()
+        local ok = vim.health.ok or vim.health.report_ok
+        local warn = vim.health.warn or vim.health.report_warn
+        local error = vim.health.error or vim.health.report_error
+
+        -- check for git installation
+        if vim.fn.executable("git") == 0 then
+            error("git is not installed")
+        else
+            ok("git is installed")
+        end
+
+        -- check for fugitive installation
+        if vim.g.loaded_fugitive == nil then
+            warn("fugitive.vim is not loaded")
+        else
+            ok("fugitive.vim is loaded")
+        end
+    end,
 })
