@@ -71,11 +71,12 @@ local function create_conventional_commit()
     local themes = require("telescope.themes")
 
     -- if you use the picker directly you have to provide your theme manually
-    picker({
+    local opts = {
         action = actions.prompt,
         include_body_and_footer = true,
-        -- theme = themes["get_ivy"]() -- ivy theme
-    })
+    }
+    opts = vim.tbl_extend("force", opts, themes["get_ivy"]())
+    picker(opts)
 end
 
 vim.keymap.set(
