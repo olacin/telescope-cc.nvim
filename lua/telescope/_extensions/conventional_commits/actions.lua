@@ -33,14 +33,20 @@ cc_actions.prompt = function(entry, include_extra_steps)
     -- HACK: dressing.nvim is asynchronous which makes this "callback hell" mandatory
     -- It does not affect standard vim.ui.input.
     vim.ui.input({ prompt = "Is there a scope ? (optional) " }, function(scope)
+        -- User aborted dialog
+        if scope == nil then
+            return
+        end
+
         inputs["scope"] = scope
 
         vim.ui.input({ prompt = "Enter commit message: " }, function(msg)
-            inputs["msg"] = msg
-
-            if not inputs.msg then
+            -- User aborted dialog
+            if msg == nil then
                 return
             end
+
+            inputs["msg"] = msg
 
             if not include_extra_steps then
                 cc_actions.commit(entry.value, inputs)
@@ -48,9 +54,19 @@ cc_actions.prompt = function(entry, include_extra_steps)
             end
 
             vim.ui.input({ prompt = "Enter the commit body: " }, function(body)
+                -- User aborted dialog
+                if body == nil then
+                    return
+                end
+
                 inputs["body"] = body
 
                 vim.ui.input({ prompt = "Enter the commit footer: " }, function(footer)
+                    -- User aborted dialog
+                    if footer == nil then
+                        return
+                    end
+
                     inputs["footer"] = footer
 
                     cc_actions.commit(entry.value, inputs)
