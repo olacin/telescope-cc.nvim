@@ -11,20 +11,70 @@ local action = cc_actions.prompt
 local include_body_and_footer = false
 local theme = {}
 
-local function create_commit_message_form()
-    local input = vim.fn.input("Commit message: ")
-    local body = vim.fn.input("Commit body: ")
-    local footer = vim.fn.input("Commit footer: ")
+local function create_commit_message_form(callback)
+    local input = ""
+    local body = ""
+    local footer = ""
 
-    local commit_message = input
-    if body ~= "" then
-        commit_message = commit_message .. "\n\n" .. body
-    end
-    if footer ~= "" then
-        commit_message = commit_message .. "\n\n" .. footer
+    local function on_submit()
+        local commit_message = input
+        if body ~= "" then
+            commit_message = commit_message .. "\n\n" .. body
+        end
+        if footer ~= "" then
+            commit_message = commit_message .. "\n\n" .. footer
+        end
+        callback(commit_message)
     end
 
-    return commit_message
+    telescope.pickers
+        .new({}, {
+            prompt_title = "Create Commit Message",
+            finder = telescope.finders.new_table({
+                results = {
+                    {
+                        "Commit message:",
+                        function(val)
+                            input = val
+                        end,
+                    },
+                    {
+                        "Commit body:",
+                        function(val)
+                            body = val
+                        end,
+                    },
+                    {
+                        "Commit footer:",
+                        function(val)
+                            footer = val
+                        end,
+                    },
+                },
+                entry_maker = function(entry)
+                    return {
+                        value = entry[1],
+                        display = entry[1],
+                        ordinal = entry[1],
+                        on_input = entry[2],
+                    }
+                end,
+            }),
+            sorter = telescope.config.values.generic_sorter({}),
+            attach_mappings = function(prompt_bufnr, map)
+                local function set_input()
+                    local entry = telescope.actions.get_selected_entry()
+                    local val = vim.fn.input(entry.value)
+                    entry.on_input(val)
+                    telescope.actions.close(prompt_bufnr)
+                end
+
+                map("i", "<CR>", set_input)
+                map("n", "<CR>", set_input)
+                return true
+            end,
+        })
+        :find()
 end
 
 local search = function(opts)
@@ -38,50 +88,10 @@ local search = function(opts)
     opts = vim.tbl_extend("force", defaults, opts)
     opts = vim.tbl_extend("force", defaults, theme)
 
-    local commit_message = create_commit_message_form()
-    if commit_message then
-        opts.commit_message = commit_message
-        cc_picker(opts)
-    end
+    create_commit_message_form(function(commit_message)
+        if commit_message then
+            opts.commit_message = commit_message
+            cc_picker(opts)
+        end
+    end)
 end
-
-return telescope.register_extension({
-    setup = function(cfg)
-        action = cfg.action or cc_actions.prompt
-        include_body_and_footer = cfg.include_body_and_footer or false
-
-        if cfg.theme and cfg.theme ~= "" then
-            if not themes["get_" .. cfg.theme] then
-                vim.notify(
-                    string.format("Could not apply provided telescope theme: '%s'", cfg.theme),
-                    vim.log.levels.WARN,
-                    { title = "telescope-cc.nvim" }
-                )
-            else
-                theme = themes["get_" .. cfg.theme]()
-            end
-        end
-    end,
-    exports = {
-        conventional_commits = search,
-    },
-    health = function()
-        local ok = vim.health.ok or vim.health.report_ok
-        local warn = vim.health.warn or vim.health.report_warn
-        local error = vim.health.error or vim.health.report_error
-
-        -- check for git installation
-        if vim.fn.executable("git") == 0 then
-            error("git is not installed")
-        else
-            ok("git is installed")
-        end
-
-        -- check for fugitive installation
-        if vim.g.loaded_fugitive == nil then
-            warn("fugitive.vim is not loaded")
-        else
-            ok("fugitive.vim is loaded")
-        end
-    end,
-})
