@@ -11,22 +11,6 @@ local action = cc_actions.prompt
 local include_body_and_footer = false
 local theme = {}
 
-local function create_commit_message_form()
-    local input = vim.fn.input("Commit message: ")
-    local body = vim.fn.input("Commit body: ")
-    local footer = vim.fn.input("Commit footer: ")
-
-    local commit_message = input
-    if body ~= "" then
-        commit_message = commit_message .. "\n\n" .. body
-    end
-    if footer ~= "" then
-        commit_message = commit_message .. "\n\n" .. footer
-    end
-
-    return commit_message
-end
-
 local search = function(opts)
     opts = opts or {}
 
@@ -38,11 +22,7 @@ local search = function(opts)
     opts = vim.tbl_extend("force", defaults, opts)
     opts = vim.tbl_extend("force", defaults, theme)
 
-    local commit_message = create_commit_message_form()
-    if commit_message then
-        opts.commit_message = commit_message
-        cc_picker(opts)
-    end
+    cc_picker(opts)
 end
 
 return telescope.register_extension({
