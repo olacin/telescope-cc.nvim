@@ -40,36 +40,44 @@ cc_actions.prompt = function(entry, include_extra_steps)
 
         inputs["scope"] = scope
 
-        vim.ui.input({ prompt = "Enter commit message: " }, function(msg)
-            -- User aborted dialog
-            if msg == nil then
+        vim.ui.input({ prompt = "Is this a breaking change ? (y|n) " }, function(breaking_change)
+            if breaking_change == nil then
                 return
             end
 
-            inputs["msg"] = msg
+            inputs["breaking_change"] = breaking_change
 
-            if not include_extra_steps then
-                cc_actions.commit(entry.value, inputs)
-                return
-            end
-
-            vim.ui.input({ prompt = "Enter the commit body: " }, function(body)
+            vim.ui.input({ prompt = "Enter commit message: " }, function(msg)
                 -- User aborted dialog
-                if body == nil then
+                if msg == nil then
                     return
                 end
 
-                inputs["body"] = body
+                inputs["msg"] = msg
 
-                vim.ui.input({ prompt = "Enter the commit footer: " }, function(footer)
+                if not include_extra_steps then
+                    cc_actions.commit(entry.value, inputs)
+                    return
+                end
+
+                vim.ui.input({ prompt = "Enter the commit body: " }, function(body)
                     -- User aborted dialog
-                    if footer == nil then
+                    if body == nil then
                         return
                     end
 
-                    inputs["footer"] = footer
+                    inputs["body"] = body
 
-                    cc_actions.commit(entry.value, inputs)
+                    vim.ui.input({ prompt = "Enter the commit footer: " }, function(footer)
+                        -- User aborted dialog
+                        if footer == nil then
+                            return
+                        end
+
+                        inputs["footer"] = footer
+
+                        cc_actions.commit(entry.value, inputs)
+                    end)
                 end)
             end)
         end)
